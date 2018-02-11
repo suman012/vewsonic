@@ -1,0 +1,66 @@
+/ip route
+add check-gateway=arp comment="WAN 3  - Distance 1" disabled=no distance=1 dst-address=0.0.0.0/0 gateway=wan3-pppoe routing-mark=wan3
+add check-gateway=arp comment="WAN 2  - Distance 1" disabled=no distance=1 dst-address=0.0.0.0/0 gateway=wan2-pppoe routing-mark=wan2
+add check-gateway=arp comment="WAN 1  - Distance 1" disabled=no distance=1 dst-address=0.0.0.0/0 gateway=wan1-pppoe routing-mark=wan1
+add check-gateway=arp comment="WAN 1  - Distance 2" disabled=no distance=2 dst-address=0.0.0.0/0 gateway=wan2-pppoe routing-mark=wan1
+add check-gateway=arp comment="WAN 2  - Distance 2" disabled=no distance=2 dst-address=0.0.0.0/0 gateway=wan3-pppoe routing-mark=wan2
+add check-gateway=arp comment="WAN 3  - Distance 2" disabled=no distance=2 dst-address=0.0.0.0/0 gateway=wan1-pppoe routing-mark=wan3
+add check-gateway=arp comment="WAN 1  - Distance 3" disabled=no distance=3 dst-address=0.0.0.0/0 gateway=wan3-pppoe routing-mark=wan1
+add check-gateway=arp comment="WAN 2  - Distance 3" disabled=no distance=3 dst-address=0.0.0.0/0 gateway=wan1-pppoe routing-mark=wan2
+add check-gateway=arp comment="WAN 3  - Distance 3" disabled=no distance=3 dst-address=0.0.0.0/0 gateway=wan2-pppoe routing-mark=wan3
+add check-gateway=arp comment="Default Route - Distance 1" disabled=no distance=1 dst-address=0.0.0.0/0 gateway=wan1-pppoe
+add check-gateway=arp comment="Default Route - Distance 2" disabled=no distance=3 dst-address=0.0.0.0/0 gateway=wan3-pppoe
+add check-gateway=arp comment="Default Route - Distance 3" disabled=no distance=2 dst-address=0.0.0.0/0 gateway=wan2-pppoe
+add check-gateway=arp comment="Static Route - WAN1" disabled=no distance=1 dst-address=0.0.0.0/0 gateway=wan1-pppoe routing-mark=static-wan1
+add check-gateway=arp comment="Static Route - WAN2" disabled=no distance=2 dst-address=0.0.0.0/0 gateway=wan2-pppoe routing-mark=static-wan2
+add check-gateway=arp comment="Static Route - WAN3" disabled=no distance=3 dst-address=0.0.0.0/0 gateway=wan3-pppoe routing-mark=static-wan3
+
+/ip firewall mangle
+add action=mark-connection chain=input comment="Mark new inbound connection wan1" connection-state=new disabled=no in-interface=wan1-pppoe new-connection-mark=wan1 \
+passthrough=yes
+add action=mark-connection chain=input comment="Mark new inbound connection wan2" connection-state=new disabled=no in-interface=wan2-pppoe new-connection-mark=wan2 \
+passthrough=yes
+add action=mark-connection chain=input comment="Mark new inbound connection wan3" connection-state=new disabled=no in-interface=wan3-pppoe new-connection-mark=wan3 \
+passthrough=yes
+add action=mark-connection chain=prerouting comment="Mark established inbound connection wan1" connection-state=established disabled=no in-interface=wan1-pppoe \
+new-connection-mark=wan1 passthrough=yes
+add action=mark-connection chain=prerouting comment="Mark established inbound connection wan2" connection-state=established disabled=no in-interface=wan2-pppoe \
+new-connection-mark=wan2 passthrough=yes
+add action=mark-connection chain=prerouting comment="Mark established inbound connection wan3" connection-state=established disabled=no in-interface=wan3-pppoe \
+new-connection-mark=wan3 passthrough=yes
+add action=mark-connection chain=prerouting comment="Mark related inbound connection wan1" connection-state=related disabled=no in-interface=wan1-pppoe \
+new-connection-mark=wan1 passthrough=yes
+add action=mark-connection chain=prerouting comment="Mark related inbound connection wan2" connection-state=related disabled=no in-interface=wan2-pppoe \
+new-connection-mark=wan2 passthrough=yes
+add action=mark-connection chain=prerouting comment="Mark related inbound connection wan3" connection-state=related disabled=no in-interface=wan3-pppoe \
+new-connection-mark=wan3 passthrough=yes
+add action=mark-routing chain=output comment="Mark new inbound route wan1" connection-mark=wan1 disabled=no new-routing-mark=static-wan1 passthrough=no
+add action=mark-routing chain=output comment="Mark new inbound route wan2" connection-mark=wan2 disabled=no new-routing-mark=static-wan2 passthrough=no
+add action=mark-routing chain=output comment="Mark new inbound route wan3" connection-mark=wan3 disabled=no new-routing-mark=static-wan3 passthrough=no
+add action=mark-connection chain=prerouting comment="Mark traffic that isn't local with PCC mark rand (3 possibilities) - option 1" connection-state=new disabled=no \
+dst-address-type=!local in-interface=lan new-connection-mark=wan1_pcc_conn passthrough=yes per-connection-classifier=both-addresses:3/0
+add action=mark-connection chain=prerouting comment="Mark traffic that isn't local with PCC mark rand (3 possibilities) - option 2" connection-state=new disabled=no \
+dst-address-type=!local in-interface=lan new-connection-mark=wan2_pcc_conn passthrough=yes per-connection-classifier=both-addresses:3/1
+add action=mark-connection chain=prerouting comment="Mark traffic that isn't local with PCC mark rand (3 possibilities) - option 3" connection-state=new disabled=no \
+dst-address-type=!local in-interface=lan new-connection-mark=wan3_pcc_conn passthrough=yes per-connection-classifier=both-addresses:3/2
+add action=mark-connection chain=prerouting comment="Mark established traffic that isn't local with PCC mark rand (3 possibilities) - option 1" connection-state=\
+established disabled=no dst-address-type=!local in-interface=lan new-connection-mark=wan1_pcc_conn passthrough=yes per-connection-classifier=\
+both-addresses:3/0
+add action=mark-connection chain=prerouting comment="Mark established traffic that isn't local with PCC mark rand (3 possibilities) - option 2" connection-state=\
+established disabled=no dst-address-type=!local in-interface=lan new-connection-mark=wan2_pcc_conn passthrough=yes per-connection-classifier=\
+both-addresses:3/1
+add action=mark-connection chain=prerouting comment="Mark established traffic that isn't local with PCC mark rand (3 possibilities) - option 3" connection-state=\
+established disabled=no dst-address-type=!local in-interface=lan new-connection-mark=wan3_pcc_conn passthrough=yes per-connection-classifier=\
+both-addresses:3/2
+add action=mark-connection chain=prerouting comment="Mark related traffic that isn't local with PCC mark rand (3 possibilities) - option 1" connection-state=related \
+disabled=no dst-address-type=!local in-interface=lan new-connection-mark=wan1_pcc_conn passthrough=yes per-connection-classifier=both-addresses:3/0
+add action=mark-connection chain=prerouting comment="Mark related traffic that isn't local with PCC mark rand (3 possibilities) - option 2" connection-state=related \
+disabled=no dst-address-type=!local in-interface=lan new-connection-mark=wan2_pcc_conn passthrough=yes per-connection-classifier=both-addresses:3/1
+add action=mark-connection chain=prerouting comment="Mark related traffic that isn't local with PCC mark rand (3 possibilities) - option 3" connection-state=related \
+disabled=no dst-address-type=!local in-interface=lan new-connection-mark=wan3_pcc_conn passthrough=yes per-connection-classifier=both-addresses:3/2
+add action=mark-routing chain=prerouting comment="Mark routing for  PCC mark - option 1" connection-mark=wan1_pcc_conn disabled=no new-routing-mark=wan1 passthrough=\
+yes
+add action=mark-routing chain=prerouting comment="Mark routing for  PCC mark - option 2" connection-mark=wan2_pcc_conn disabled=no new-routing-mark=wan2 passthrough=\
+yes
+add action=mark-routing chain=prerouting comment="Mark routing for  PCC mark - option 3" connection-mark=wan3_pcc_conn disabled=no new-routing-mark=wan3 passthrough=\
+yes
